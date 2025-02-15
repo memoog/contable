@@ -1,641 +1,480 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestión Contable Avanzada - Normativas Mexicanas</title>
-    <style>
-        /* Estilos Modernos */
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-        }
-        
-        .upload-section {
-            text-align: center;
-            padding: 30px;
-            border: 2px dashed #3498db;
-            border-radius: 12px;
-            background-color: #ecf5ff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-bottom: 20px;
-        }
-        
-        .upload-section:hover {
-            background-color: #d6e9ff;
-        }
-        
-        .upload-section p {
-            margin: 0;
-            font-size: 1.2em;
-            color: #3498db;
-        }
-        
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-align: center;
-            font-size: 1.1em;
-        }
-        
-        .status.processing {
-            background: #f1c40f;
-            color: #fff;
-        }
-        
-        .status.success {
-            background: #2ecc71;
-            color: #fff;
-        }
-        
-        .status.error {
-            background: #e74c3c;
-            color: #fff;
-        }
-        
-        .results {
-            margin-top: 30px;
-        }
-        
-        .card {
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-        
-        .card h3 {
-            margin-top: 0;
-            color: #3498db;
-            font-size: 1.5em;
-        }
-        
-        .card p {
-            margin: 10px 0;
-            font-size: 1.1em;
-        }
-        
-        .card .total {
-            font-weight: bold;
-            color: #27ae60;
-        }
-        
-        .btn-pdf {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #3498db;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-size: 1em;
-            text-decoration: none;
-            margin-top: 20px;
-        }
-        
-        .btn-pdf:hover {
-            background-color: #2980b9;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ContaMex - Análisis y Extracción de Excel</title>
+  
+  <!-- Librerías para procesar Excel y generar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <style>
+    /* Estilos generales */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .header {
+      background: #2c3e50;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .header input[type="file"] {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      background: #3498db;
+    }
+    .nav-tabs button {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 15px 30px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .nav-tabs button.active {
+      background: #2980b9;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    /* Acordeón para datos extraídos */
+    .sheet-section {
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .sheet-header {
+      background: #2980b9;
+      color: #fff;
+      padding: 10px 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sheet-content {
+      display: none;
+      padding: 10px 15px;
+      border-top: 1px solid #ddd;
+    }
+    .scroll-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background: #3498db;
+      color: #fff;
+    }
+    .export-buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .export-btn {
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 0 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
 </head>
-
 <body>
 
-    <div class="container">
-        <h1>Gestión Contable Avanzada</h1>
-        <div class="upload-section" onclick="document.getElementById('fileInput').click()">
-            <p>📂 Arrastra o selecciona un archivo Excel o PDF</p>
-            <input type="file" id="fileInput" style="display: none;" accept=".xlsx,.xls,.pdf">
-        </div>
-        <div id="statusMessage"></div>
-        <div class="results" id="resultsContainer"></div>
-        <!-- Botón para descargar informe PDF (se mostrará al procesar datos) -->
-        <div id="pdfButtonContainer" style="text-align: center; display: none;">
-            <button class="btn-pdf" onclick="generarInformePDF()">Descargar Informe PDF</button>
-        </div>
+  <!-- Encabezado con única entrada para subir archivo -->
+  <div class="header">
+    <h1>ContaMex - Análisis y Extracción de Excel</h1>
+    <p>Sube tu archivo Excel para extraer toda la información y realizar el análisis contable.</p>
+    <input type="file" id="excelInput" accept=".xlsx, .xls" />
+  </div>
+
+  <!-- Pestañas de navegación -->
+  <div class="nav-tabs">
+    <button id="tabExtracted" class="active" onclick="showTab('extracted')">Datos Extraídos</button>
+    <button id="tabAnalysis" onclick="showTab('analysis')">Análisis Contable</button>
+  </div>
+
+  <!-- Contenedor para Datos Extraídos -->
+  <div id="extractedContainer" class="container">
+    <h2>Datos Extraídos</h2>
+    <div id="dataExtracted"></div>
+  </div>
+
+  <!-- Contenedor para Análisis Contable -->
+  <div id="analysisContainer" class="container" style="display:none;">
+    <h2>Análisis Contable</h2>
+    <div id="analysisContent"></div>
+    <div class="export-buttons">
+      <button class="export-btn" onclick="exportarExcel()">Exportar Excel</button>
+      <button class="export-btn" onclick="generarPDF()">Generar PDF</button>
     </div>
-
-    <!-- Librerías -->
-    <!-- XLSX para Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- pdf.js para leer PDFs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-    <!-- jsPDF para generar PDFs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <script>
-        // Variable global para almacenar los resultados y usarlos al generar el informe PDF
-        let globalResults = null;
-
-        /**********************
-         * Cálculos de Impuestos
-         **********************/
-
-        // Función para calcular el ISR utilizando una tabla de rangos (ejemplo referencial)
-        function calcularISR(ingresos) {
-            // Tabla de rangos (valores referenciales; revisar según normativas vigentes)
-            const brackets = [{
-                limite: 416220.00,
-                tasa: 0.15,
-                cuotaFija: 0
-            }, {
-                limite: 624329.00,
-                tasa: 0.20,
-                cuotaFija: 62432.00
-            }, {
-                limite: 867123.00,
-                tasa: 0.25,
-                cuotaFija: 104864.00
-            }, {
-                limite: Infinity,
-                tasa: 0.30,
-                cuotaFija: 162864.00
-            }];
-
-            for (let bracket of brackets) {
-                if (ingresos <= bracket.limite) {
-                    // Se aplica la cuota fija y la tasa sobre el excedente del límite inferior (se asume límite inferior del bracket anterior)
-                    // Para simplificar, usamos el cálculo directo
-                    return bracket.cuotaFija + (ingresos - (bracket.limite - (bracket.limite * bracket.tasa))) * bracket.tasa;
-                }
-            }
-            return 0;
-        }
-
-        // Función para calcular un impuesto sobre nómina (por ejemplo, 3% del salario; este valor varía según entidad)
-        function calcularImpuestoNomina(salario) {
-            return salario * 0.03;
-        }
-
-        /**********************
-         * Procesamiento de Datos
-         **********************/
-
-        // Función para procesar datos de Excel
-        function procesarDatosExcel(datos) {
-            let empresa = {};
-            let cuentasBancarias = [];
-            let facturas = [];
-            let impuestos = {
-                totalFacturado: 0,
-                iva: 0,
-                isr: 0
-            };
-            let nomina = {
-                salarios: [],
-                totalSalarios: 0,
-                retenciones: 0,
-                provisiones: 0,
-                impuestoNomina: 0
-            };
-            let activosFijos = [];
-            let cuentasPorPagar = [];
-            let cuentasPorCobrar = [];
-            let depreciacion = {
-                anual: 0,
-                acumulada: 0
-            };
-
-            datos.forEach(row => {
-                // Datos de la empresa
-                if (row.EMPRESA) empresa = {
-                    nombre: row.EMPRESA,
-                    rfc: row.RFC,
-                    direccion: row.DIRECCION
-                };
-
-                // Cuentas bancarias
-                if (row.BANCO && row.SALDO) {
-                    cuentasBancarias.push({
-                        banco: row.BANCO,
-                        saldo: parseFloat(row.SALDO)
-                    });
-                }
-
-                // Facturas
-                if (row.FACTURA && row.MONTO) {
-                    const monto = parseFloat(row.MONTO);
-                    facturas.push({
-                        numero: row.FACTURA,
-                        monto: monto,
-                        fecha: row.FECHA
-                    });
-                    impuestos.totalFacturado += monto;
-                }
-
-                // Nómina
-                if (row.EMPLEADO && row.SALARIO) {
-                    const salario = parseFloat(row.SALARIO);
-                    nomina.salarios.push({
-                        empleado: row.EMPLEADO,
-                        salario
-                    });
-                    nomina.totalSalarios += salario;
-                    nomina.retenciones += salario * 0.10; // Retención del 10%
-                    nomina.provisiones += salario * 0.05; // Provisión del 5%
-                    nomina.impuestoNomina += calcularImpuestoNomina(salario);
-                }
-
-                // Activos fijos
-                if (row.ACTIVO && row.VALOR) {
-                    const valor = parseFloat(row.VALOR);
-                    activosFijos.push({
-                        activo: row.ACTIVO,
-                        valor
-                    });
-                    // Se asume depreciación anual fija del 10%
-                    depreciacion.anual += valor * 0.10;
-                    depreciacion.acumulada += valor * 0.10;
-                }
-
-                // Cuentas por cobrar
-                if (row.CLIENTE && row.COBRAR) {
-                    cuentasPorCobrar.push({
-                        cliente: row.CLIENTE,
-                        monto: parseFloat(row.COBRAR)
-                    });
-                }
-
-                // Cuentas por pagar
-                if (row.PROVEEDOR && row.PAGAR) {
-                    cuentasPorPagar.push({
-                        proveedor: row.PROVEEDOR,
-                        monto: parseFloat(row.PAGAR)
-                    });
-                }
-            });
-
-            // Cálculos de impuestos
-            impuestos.iva = impuestos.totalFacturado * 0.16; // IVA al 16%
-            impuestos.isr = calcularISR(impuestos.totalFacturado);
-
-            return {
-                empresa,
-                cuentasBancarias,
-                facturas,
-                impuestos,
-                nomina,
-                activosFijos,
-                cuentasPorCobrar,
-                cuentasPorPagar,
-                depreciacion
-            };
-        }
-
-        // Función para procesar datos extraídos del PDF (se asume un formato de líneas "clave: valor")
-        function procesarDatosPDF(text) {
-            let lines = text.split('\n');
-            let empresa = {};
-            let cuentasBancarias = [];
-            let facturas = [];
-            let impuestos = {
-                totalFacturado: 0,
-                iva: 0,
-                isr: 0
-            };
-            let nomina = {
-                salarios: [],
-                totalSalarios: 0,
-                retenciones: 0,
-                provisiones: 0,
-                impuestoNomina: 0
-            };
-            let activosFijos = [];
-            let cuentasPorPagar = [];
-            let cuentasPorCobrar = [];
-            let depreciacion = {
-                anual: 0,
-                acumulada: 0
-            };
-
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line) return;
-                // Empresa
-                if (line.startsWith("EMPRESA:")) {
-                    empresa.nombre = line.replace("EMPRESA:", "").trim();
-                }
-                if (line.startsWith("RFC:")) {
-                    empresa.rfc = line.replace("RFC:", "").trim();
-                }
-                if (line.startsWith("DIRECCION:")) {
-                    empresa.direccion = line.replace("DIRECCION:", "").trim();
-                }
-                // Cuentas bancarias (formato: BANCO: Nombre, SALDO: 1234.56)
-                if (line.startsWith("BANCO:")) {
-                    let bancoMatch = line.match(/BANCO:\s*([^,]+),\s*SALDO:\s*([\d\.]+)/i);
-                    if (bancoMatch) {
-                        cuentasBancarias.push({
-                            banco: bancoMatch[1].trim(),
-                            saldo: parseFloat(bancoMatch[2])
-                        });
-                    }
-                }
-                // Facturas (formato: FACTURA: 001, MONTO: 1500.00, FECHA: 2025-01-15)
-                if (line.startsWith("FACTURA:")) {
-                    let facturaMatch = line.match(/FACTURA:\s*([^,]+),\s*MONTO:\s*([\d\.]+),\s*FECHA:\s*(.+)/i);
-                    if (facturaMatch) {
-                        let monto = parseFloat(facturaMatch[2]);
-                        facturas.push({
-                            numero: facturaMatch[1].trim(),
-                            monto: monto,
-                            fecha: facturaMatch[3].trim()
-                        });
-                        impuestos.totalFacturado += monto;
-                    }
-                }
-                // Nómina (formato: EMPLEADO: Nombre, SALARIO: 5000.00)
-                if (line.startsWith("EMPLEADO:")) {
-                    let nominaMatch = line.match(/EMPLEADO:\s*([^,]+),\s*SALARIO:\s*([\d\.]+)/i);
-                    if (nominaMatch) {
-                        let salario = parseFloat(nominaMatch[2]);
-                        nomina.salarios.push({
-                            empleado: nominaMatch[1].trim(),
-                            salario
-                        });
-                        nomina.totalSalarios += salario;
-                        nomina.retenciones += salario * 0.10;
-                        nomina.provisiones += salario * 0.05;
-                        nomina.impuestoNomina += calcularImpuestoNomina(salario);
-                    }
-                }
-                // Activos fijos (formato: ACTIVO: Nombre, VALOR: 8000.00)
-                if (line.startsWith("ACTIVO:")) {
-                    let activoMatch = line.match(/ACTIVO:\s*([^,]+),\s*VALOR:\s*([\d\.]+)/i);
-                    if (activoMatch) {
-                        let valor = parseFloat(activoMatch[2]);
-                        activosFijos.push({
-                            activo: activoMatch[1].trim(),
-                            valor
-                        });
-                        depreciacion.anual += valor * 0.10;
-                        depreciacion.acumulada += valor * 0.10;
-                    }
-                }
-                // Cuentas por cobrar (formato: CLIENTE: Nombre, COBRAR: 2500.00)
-                if (line.startsWith("CLIENTE:")) {
-                    let clienteMatch = line.match(/CLIENTE:\s*([^,]+),\s*COBRAR:\s*([\d\.]+)/i);
-                    if (clienteMatch) {
-                        cuentasPorCobrar.push({
-                            cliente: clienteMatch[1].trim(),
-                            monto: parseFloat(clienteMatch[2])
-                        });
-                    }
-                }
-                // Cuentas por pagar (formato: PROVEEDOR: Nombre, PAGAR: 1200.00)
-                if (line.startsWith("PROVEEDOR:")) {
-                    let proveedorMatch = line.match(/PROVEEDOR:\s*([^,]+),\s*PAGAR:\s*([\d\.]+)/i);
-                    if (proveedorMatch) {
-                        cuentasPorPagar.push({
-                            proveedor: proveedorMatch[1].trim(),
-                            monto: parseFloat(proveedorMatch[2])
-                        });
-                    }
-                }
-            });
-
-            impuestos.iva = impuestos.totalFacturado * 0.16;
-            impuestos.isr = calcularISR(impuestos.totalFacturado);
-
-            return {
-                empresa,
-                cuentasBancarias,
-                facturas,
-                impuestos,
-                nomina,
-                activosFijos,
-                cuentasPorCobrar,
-                cuentasPorPagar,
-                depreciacion
-            };
-        }
-
-        // Función para mostrar los resultados en la página (para Excel y PDF)
-        function mostrarResultados(results) {
-            globalResults = results; // Se guarda para usar en la generación del PDF
-            document.getElementById('statusMessage').innerHTML = `<div class="status success">Archivo procesado correctamente.</div>`;
-            document.getElementById('pdfButtonContainer').style.display = 'block';
-
-            const container = document.getElementById('resultsContainer');
-            container.innerHTML = `
-      <div class="card">
-        <h3>📌 Empresa</h3>
-        <p>Nombre: ${results.empresa.nombre || 'N/A'}</p>
-        <p>RFC: ${results.empresa.rfc || 'N/A'}</p>
-        <p>Dirección: ${results.empresa.direccion || 'N/A'}</p>
-      </div>
-      <div class="card">
-        <h3>🏦 Cuentas Bancarias</h3>
-        ${results.cuentasBancarias.map(c => `<p>${c.banco}: $${c.saldo.toFixed(2)}</p>`).join('')}
-        <p class="total">Total: $${results.cuentasBancarias.reduce((acc, c) => acc + c.saldo, 0).toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>📑 Facturas</h3>
-        ${results.facturas.map(f => `<p>#${f.numero} - $${f.monto.toFixed(2)} (${f.fecha})</p>`).join('')}
-        <p class="total">Total Facturado: $${results.impuestos.totalFacturado.toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>🧾 Impuestos</h3>
-        <p>IVA (16%): $${results.impuestos.iva.toFixed(2)}</p>
-        <p>ISR: $${results.impuestos.isr.toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>💼 Nómina</h3>
-        ${results.nomina.salarios.map(n => `<p>${n.empleado}: $${n.salario.toFixed(2)}</p>`).join('')}
-        <p class="total">Total Salarios: $${results.nomina.totalSalarios.toFixed(2)}</p>
-        <p>Retenciones (10%): $${results.nomina.retenciones.toFixed(2)}</p>
-        <p>Provisiones (5%): $${results.nomina.provisiones.toFixed(2)}</p>
-        <p>Impuesto Nómina (3%): $${results.nomina.impuestoNomina.toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>🏢 Activos Fijos</h3>
-        ${results.activosFijos.map(a => `<p>${a.activo}: $${a.valor.toFixed(2)}</p>`).join('')}
-        <p class="total">Depreciación Anual (10%): $${results.depreciacion.anual.toFixed(2)}</p>
-        <p>Depreciación Acumulada: $${results.depreciacion.acumulada.toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>📈 Cuentas por Cobrar</h3>
-        ${results.cuentasPorCobrar.map(c => `<p>${c.cliente}: $${c.monto.toFixed(2)}</p>`).join('')}
-        <p class="total">Total por Cobrar: $${results.cuentasPorCobrar.reduce((acc, c) => acc + c.monto, 0).toFixed(2)}</p>
-      </div>
-      <div class="card">
-        <h3>📉 Cuentas por Pagar</h3>
-        ${results.cuentasPorPagar.map(p => `<p>${p.proveedor}: $${p.monto.toFixed(2)}</p>`).join('')}
-        <p class="total">Total por Pagar: $${results.cuentasPorPagar.reduce((acc, p) => acc + p.monto, 0).toFixed(2)}</p>
-      </div>
-    `;
-  }
-
-  /**********************
-   * Manejo de Archivos (Excel / PDF)
-   **********************/
-  document.getElementById('fileInput').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    document.getElementById('statusMessage').innerHTML = `<div class="status processing">Procesando archivo ${file.name}...</div>`;
-    
-    const extension = file.name.split('.').pop().toLowerCase();
-    
-    // Procesar Excel
-    if (extension === "xlsx" || extension === "xls") {
-      try {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(sheet);
-          const results = procesarDatosExcel(jsonData);
-          mostrarResultados(results);
-        };
-        reader.readAsArrayBuffer(file);
-      } catch (error) {
-        document.getElementById('statusMessage').innerHTML = `<div class="status error">Error al procesar el archivo: ${error.message}</div>`;
+  </div>
+  
+  <script>
+    let globalWorkbook = null;
+    /* Función para cambiar de pestaña */
+    function showTab(tab) {
+      if(tab === 'extracted'){
+        document.getElementById("extractedContainer").style.display = "block";
+        document.getElementById("analysisContainer").style.display = "none";
+        document.getElementById("tabExtracted").classList.add("active");
+        document.getElementById("tabAnalysis").classList.remove("active");
+      } else {
+        document.getElementById("extractedContainer").style.display = "none";
+        document.getElementById("analysisContainer").style.display = "block";
+        document.getElementById("tabExtracted").classList.remove("active");
+        document.getElementById("tabAnalysis").classList.add("active");
       }
     }
-    // Procesar PDF
-    else if (extension === "pdf") {
-      try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const arrayBuffer = e.target.result;
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          const maxPages = pdf.numPages;
-          let fullText = '';
-          for (let i = 1; i <= maxPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join('\n');
-            fullText += pageText + '\n';
+    
+    /* Event listener para subir el archivo */
+    document.getElementById("excelInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        try {
+          globalWorkbook = XLSX.read(data, { type: "array" });
+        } catch (error) {
+          alert("Error al leer el archivo Excel.");
+          return;
+        }
+        // Procesa y muestra ambos módulos
+        mostrarDatosExtraidos(globalWorkbook);
+        procesarAnalisis(globalWorkbook);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    
+    /* Función para generar tabla HTML a partir de datos */
+    function generarTablaHTML(dataArray) {
+      let html = '<div class="scroll-container"><table>';
+      dataArray.forEach((row, rowIndex) => {
+        html += "<tr>";
+        row.forEach(cell => {
+          if(rowIndex === 0) {
+            html += `<th>${cell !== undefined ? cell : ""}</th>`;
+          } else {
+            html += `<td>${cell !== undefined ? cell : ""}</td>`;
           }
-          const results = procesarDatosPDF(fullText);
-          mostrarResultados(results);
-        };
-        reader.readAsArrayBuffer(file);
-      } catch (error) {
-        document.getElementById('statusMessage').innerHTML = `<div class="status error">Error al procesar el PDF: ${error.message}</div>`;
-      }
-    } else {
-      document.getElementById('statusMessage').innerHTML = `<div class="status error">Tipo de archivo no soportado.</div>`;
-    }
-  });
-
-  /**********************
-   * Generación de Informe PDF
-   **********************/
-  async function generarInformePDF() {
-    if (!globalResults) return;
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 10;
-    doc.setFontSize(16);
-    doc.text("Informe de Gestión Contable Avanzada", 10, y);
-    y += 10;
-    
-    doc.setFontSize(14);
-    doc.text("Empresa:", 10, y);
-    y += 7;
-    doc.setFontSize(12);
-    doc.text(`Nombre: ${globalResults.empresa.nombre || 'N/A'}`, 10, y);
-    y += 7;
-    doc.text(`RFC: ${globalResults.empresa.rfc || 'N/A'}`, 10, y);
-    y += 7;
-    doc.text(`Dirección: ${globalResults.empresa.direccion || 'N/A'}`, 10, y);
-    y += 10;
-    
-    function agregarSeccion(titulo, contenido) {
-      doc.setFontSize(14);
-      if(y > 260) { doc.addPage(); y = 10; }
-      doc.text(titulo, 10, y);
-      y += 7;
-      doc.setFontSize(12);
-      contenido.forEach(linea => {
-        if(y > 260) { doc.addPage(); y = 10; }
-        doc.text(linea, 10, y);
-        y += 7;
+        });
+        html += "</tr>";
       });
-      y += 5;
+      html += "</table></div>";
+      return html;
     }
     
-    // Cuentas Bancarias
-    const bancos = globalResults.cuentasBancarias.map(c => `${c.banco}: $${c.saldo.toFixed(2)}`);
-    bancos.push(`Total: $${globalResults.cuentasBancarias.reduce((acc, c) => acc + c.saldo, 0).toFixed(2)}`);
-    agregarSeccion("Cuentas Bancarias:", bancos);
+    /* Función para mostrar toda la información extraída (por hoja) en formato acordeón */
+    function mostrarDatosExtraidos(workbook) {
+      const container = document.getElementById("dataExtracted");
+      container.innerHTML = "";
+      workbook.SheetNames.forEach(sheetName => {
+        const sheet = workbook.Sheets[sheetName];
+        const dataArray = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        let sectionHTML = `<div class="sheet-section">
+                             <div class="sheet-header" onclick="toggleSheetContent(this)">
+                               <span>${sheetName}</span>
+                               <span>▼</span>
+                             </div>
+                             <div class="sheet-content">
+                               ${dataArray && dataArray.length > 0 ? generarTablaHTML(dataArray) : "<p>No hay datos en esta hoja.</p>"}
+                             </div>
+                           </div>`;
+        container.innerHTML += sectionHTML;
+      });
+    }
     
-    // Facturas
-    const facturas = globalResults.facturas.map(f => `#${f.numero} - $${f.monto.toFixed(2)} (${f.fecha})`);
-    facturas.push(`Total Facturado: $${globalResults.impuestos.totalFacturado.toFixed(2)}`);
-    agregarSeccion("Facturas:", facturas);
+    /* Función para el acordeón */
+    function toggleSheetContent(header) {
+      const content = header.nextElementSibling;
+      content.style.display = (content.style.display === "block") ? "none" : "block";
+    }
     
-    // Impuestos
-    const impuestos = [
-      `IVA (16%): $${globalResults.impuestos.iva.toFixed(2)}`,
-      `ISR: $${globalResults.impuestos.isr.toFixed(2)}`
-    ];
-    agregarSeccion("Impuestos:", impuestos);
+    /**************************
+     * MÓDULO DE ANÁLISIS CONTABLE
+     **************************/
+    // Definiciones para identificar hojas mensuales y extraer datos
+    const mesesOrdenados = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+    const mappingMeses = {
+      "ENERO": ["enero", "ene"],
+      "FEBRERO": ["febrero", "feb"],
+      "MARZO": ["marzo", "mar"],
+      "ABRIL": ["abril", "abr", "brio"],
+      "MAYO": ["mayo", "may"],
+      "JUNIO": ["junio", "jun"],
+      "JULIO": ["julio", "jul"],
+      "AGOSTO": ["agosto", "ago"],
+      "SEPTIEMBRE": ["septiembre", "sep"],
+      "OCTUBRE": ["octubre", "oct"],
+      "NOVIEMBRE": ["noviembre", "nov"],
+      "DICIEMBRE": ["diciembre", "dic", "hoja11"]
+    };
     
-    // Nómina
-    const nomina = globalResults.nomina.salarios.map(n => `${n.empleado}: $${n.salario.toFixed(2)}`);
-    nomina.push(`Total Salarios: $${globalResults.nomina.totalSalarios.toFixed(2)}`);
-    nomina.push(`Retenciones (10%): $${globalResults.nomina.retenciones.toFixed(2)}`);
-    nomina.push(`Provisiones (5%): $${globalResults.nomina.provisiones.toFixed(2)}`);
-    nomina.push(`Impuesto Nómina (3%): $${globalResults.nomina.impuestoNomina.toFixed(2)}`);
-    agregarSeccion("Nómina:", nomina);
+    // Palabras clave para extraer información de cada hoja mensual
+    const camposExtraer = {
+      depositosFacturados: { label: "Depósitos Nominales Facturados", search: ["depositos nominales facturados", "ingresos nominales facturados"] },
+      depositosNoFacturados: { label: "Depósitos No Facturados", search: ["depositos no facturados", "depositos sin facturar"] },
+      retirosFacturados: { label: "Retiros Facturados", search: ["retiros facturados"] },
+      retirosNoFacturados: { label: "Retiros No Facturados", search: ["retiros no facturados"] }
+    };
     
-    // Activos Fijos
-    const activos = globalResults.activosFijos.map(a => `${a.activo}: $${a.valor.toFixed(2)}`);
-    activos.push(`Depreciación Anual (10%): $${globalResults.depreciacion.anual.toFixed(2)}`);
-    activos.push(`Depreciación Acumulada: $${globalResults.depreciacion.acumulada.toFixed(2)}`);
-    agregarSeccion("Activos Fijos:", activos);
+    // Parámetros para los cálculos de ISR
+    const margenUtilidad = 0.10; // 10%
+    const tasaImpuesto = 0.30;   // 30%
     
-    // Cuentas por Cobrar
-    const cobrar = globalResults.cuentasPorCobrar.map(c => `${c.cliente}: $${c.monto.toFixed(2)}`);
-    cobrar.push(`Total por Cobrar: $${globalResults.cuentasPorCobrar.reduce((acc, c) => acc + c.monto, 0).toFixed(2)}`);
-    agregarSeccion("Cuentas por Cobrar:", cobrar);
+    // Objeto para almacenar los datos de análisis por mes
+    let datosMes = {};
     
-    // Cuentas por Pagar
-    const pagar = globalResults.cuentasPorPagar.map(p => `${p.proveedor}: $${p.monto.toFixed(2)}`);
-    pagar.push(`Total por Pagar: $${globalResults.cuentasPorPagar.reduce((acc, p) => acc + p.monto, 0).toFixed(2)}`);
-    agregarSeccion("Cuentas por Pagar:", pagar);
+    // Función para normalizar texto
+    function normalizarTexto(texto) {
+      if(typeof texto !== "string") return "";
+      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
     
-    doc.save('informe_contable.pdf');
-  }
-    </script>
-
+    // Extraer suma de valores de una fila si la primera celda contiene alguna palabra clave
+    function extraerValorDeFila(fila, busquedas) {
+      const texto = normalizarTexto(fila[0] || "");
+      let coincide = busquedas.some(term => texto.includes(normalizarTexto(term)));
+      if(!coincide) return 0;
+      let suma = 0;
+      for(let i = 1; i < fila.length; i++) {
+        let valor = parseFloat(fila[i]);
+        if(!isNaN(valor)) {
+          suma += valor;
+        }
+      }
+      return suma;
+    }
+    
+    // Extraer los valores relevantes de una hoja mensual
+    function extraerValoresDeHoja(datosHoja) {
+      let valores = {
+        depositosFacturados: 0,
+        depositosNoFacturados: 0,
+        retirosFacturados: 0,
+        retirosNoFacturados: 0
+      };
+      datosHoja.forEach(fila => {
+        for(let key in camposExtraer) {
+          const campo = camposExtraer[key];
+          valores[key] += extraerValorDeFila(fila, campo.search);
+        }
+      });
+      return valores;
+    }
+    
+    // Procesar los datos de análisis de los 12 meses
+    function procesarAnalisis(workbook) {
+      datosMes = {}; // Reiniciar datos
+      mesesOrdenados.forEach(mes => {
+        // Buscar la hoja que corresponda al mes (usando mapping)
+        let sheetName = workbook.SheetNames.find(nombre => {
+          return mappingMeses[mes].some(patron => normalizarTexto(nombre).includes(normalizarTexto(patron)));
+        });
+        if(sheetName) {
+          const sheet = workbook.Sheets[sheetName];
+          const datosHoja = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          const extraidos = extraerValoresDeHoja(datosHoja);
+          extraidos.totalDepositos = extraidos.depositosFacturados + extraidos.depositosNoFacturados;
+          extraidos.totalRetiros = extraidos.retirosFacturados + extraidos.retirosNoFacturados;
+          extraidos.ingresosNominalesMes = extraidos.totalDepositos - extraidos.totalRetiros;
+          datosMes[mes] = extraidos;
+        } else {
+          datosMes[mes] = {
+            depositosFacturados: 0,
+            depositosNoFacturados: 0,
+            retirosFacturados: 0,
+            retirosNoFacturados: 0,
+            totalDepositos: 0,
+            totalRetiros: 0,
+            ingresosNominalesMes: 0
+          };
+        }
+      });
+      calcularCamposAdicionales();
+      mostrarAnalisis();
+    }
+    
+    // Calcular campos acumulados y derivados
+    function calcularCamposAdicionales() {
+      let acumulado = 0;
+      mesesOrdenados.forEach(mes => {
+        let d = datosMes[mes];
+        d.ingresosNominalesAnteriores = acumulado;
+        d.ingresosNominalesTotales = acumulado + d.ingresosNominalesMes;
+        acumulado = d.ingresosNominalesTotales;
+        d.utilidad = d.ingresosNominalesTotales * margenUtilidad;
+        d.cu = (d.ingresosNominalesTotales !== 0) ? (d.utilidad / d.ingresosNominalesTotales) * 100 : 0;
+        d.impuestoDeterminado = d.utilidad * tasaImpuesto;
+        d.base = d.utilidad;
+        d.tasa = tasaImpuesto * 100;
+        d.ppa = d.impuestoDeterminado;
+        d.isrMensual = d.impuestoDeterminado;
+        // Para C.U. (Utilidad Fiscal)
+        d.ingresosAcumulables = d.totalDepositos;
+        d.deduccionesAutorizadas = d.totalRetiros;
+        d.perdidas = (d.ingresosNominalesMes < 0) ? Math.abs(d.ingresosNominalesMes) : 0;
+        d.utilidadFiscal = d.ingresosAcumulables - d.deduccionesAutorizadas - d.perdidas;
+        d.resultadoFiscal = d.utilidadFiscal;
+      });
+    }
+    
+    // Mostrar el análisis contable en la pestaña "Análisis Contable"
+    function mostrarAnalisis() {
+      const container = document.getElementById("analysisContent");
+      let html = `<h3>Reporte ISR</h3>`;
+      html += `<div class="scroll-container"><table>
+                <tr>
+                  <th>Mes</th>
+                  <th>Ingresos Nominales del Mes</th>
+                  <th>Ingresos Nominales Anteriores</th>
+                  <th>Ingresos Nominales Totales</th>
+                  <th>Utilidad</th>
+                  <th>C.U. (%)</th>
+                  <th>Impuesto Determinado</th>
+                  <th>Base</th>
+                  <th>Tasa (%)</th>
+                  <th>PPA</th>
+                  <th>ISR Mensual</th>
+                </tr>`;
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        html += `<tr>
+                   <td>${mes}</td>
+                   <td>$${d.ingresosNominalesMes.toLocaleString()}</td>
+                   <td>$${d.ingresosNominalesAnteriores.toLocaleString()}</td>
+                   <td>$${d.ingresosNominalesTotales.toLocaleString()}</td>
+                   <td>$${d.utilidad.toLocaleString()}</td>
+                   <td>${d.cu.toFixed(2)}%</td>
+                   <td>$${d.impuestoDeterminado.toLocaleString()}</td>
+                   <td>$${d.base.toLocaleString()}</td>
+                   <td>${d.tasa}%</td>
+                   <td>$${d.ppa.toLocaleString()}</td>
+                   <td>$${d.isrMensual.toLocaleString()}</td>
+                 </tr>`;
+      });
+      html += `</table></div>`;
+      
+      html += `<h3>Reporte C.U. (Utilidad Fiscal)</h3>`;
+      html += `<div class="scroll-container"><table>
+                <tr>
+                  <th>Mes</th>
+                  <th>Ingresos Acumulables</th>
+                  <th>Deducciones Autorizadas</th>
+                  <th>Pérdidas</th>
+                  <th>Utilidad Fiscal</th>
+                  <th>Resultado Fiscal</th>
+                  <th>Ingresos Nominales</th>
+                </tr>`;
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        html += `<tr>
+                   <td>${mes}</td>
+                   <td>$${d.ingresosAcumulables.toLocaleString()}</td>
+                   <td>$${d.deduccionesAutorizadas.toLocaleString()}</td>
+                   <td>$${d.perdidas.toLocaleString()}</td>
+                   <td>$${d.utilidadFiscal.toLocaleString()}</td>
+                   <td>$${d.resultadoFiscal.toLocaleString()}</td>
+                   <td>$${d.ingresosNominalesMes.toLocaleString()}</td>
+                 </tr>`;
+      });
+      html += `</table></div>`;
+      container.innerHTML = html;
+    }
+    
+    /**************************
+     * Funciones de Exportación
+     **************************/
+    function exportarExcel() {
+      const wb = XLSX.utils.book_new();
+      // Hoja: Reporte ISR
+      let wsDataISR = [];
+      wsDataISR.push(["Mes", "Ingresos Nominales del Mes", "Ingresos Nominales Anteriores", "Ingresos Nominales Totales", "Utilidad", "C.U. (%)", "Impuesto Determinado", "Base", "Tasa (%)", "PPA", "ISR Mensual"]);
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        wsDataISR.push([mes, d.ingresosNominalesMes, d.ingresosNominalesAnteriores, d.ingresosNominalesTotales, d.utilidad, d.cu, d.impuestoDeterminado, d.base, d.tasa, d.ppa, d.isrMensual]);
+      });
+      const wsISR = XLSX.utils.aoa_to_sheet(wsDataISR);
+      XLSX.utils.book_append_sheet(wb, wsISR, "Reporte ISR");
+      
+      // Hoja: Reporte C.U.
+      let wsDataCU = [];
+      wsDataCU.push(["Mes", "Ingresos Acumulables", "Deducciones Autorizadas", "Pérdidas", "Utilidad Fiscal", "Resultado Fiscal", "Ingresos Nominales"]);
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        wsDataCU.push([mes, d.ingresosAcumulables, d.deduccionesAutorizadas, d.perdidas, d.utilidadFiscal, d.resultadoFiscal, d.ingresosNominalesMes]);
+      });
+      const wsCU = XLSX.utils.aoa_to_sheet(wsDataCU);
+      XLSX.utils.book_append_sheet(wb, wsCU, "Reporte CU");
+      
+      XLSX.writeFile(wb, "Reporte_Gestion_Contable.xlsx");
+    }
+    
+    function generarPDF() {
+      const { jsPDF } = jspdf;
+      const doc = new jsPDF();
+      let y = 15;
+      doc.setFontSize(16);
+      doc.text("Reporte ISR", 15, y);
+      y += 10;
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        doc.setFontSize(12);
+        doc.text(`${mes}: Ingresos del Mes $${d.ingresosNominalesMes.toLocaleString()} | Acumulados $${d.ingresosNominalesAnteriores.toLocaleString()} | Totales $${d.ingresosNominalesTotales.toLocaleString()}`, 15, y);
+        y += 7;
+        doc.text(`Utilidad $${d.utilidad.toLocaleString()} | C.U. ${d.cu.toFixed(2)}%`, 15, y);
+        y += 7;
+        doc.text(`Impuesto $${d.impuestoDeterminado.toLocaleString()} | Base $${d.base.toLocaleString()} | Tasa ${d.tasa}% | PPA $${d.ppa.toLocaleString()} | ISR Mensual $${d.isrMensual.toLocaleString()}`, 15, y);
+        y += 10;
+        if(y > 250) { doc.addPage(); y = 15; }
+      });
+      doc.addPage();
+      y = 15;
+      doc.setFontSize(16);
+      doc.text("Reporte C.U. (Utilidad Fiscal)", 15, y);
+      y += 10;
+      mesesOrdenados.forEach(mes => {
+        const d = datosMes[mes];
+        doc.setFontSize(12);
+        doc.text(`${mes}: Ingresos Acumulables $${d.ingresosAcumulables.toLocaleString()} | Deducciones $${d.deduccionesAutorizadas.toLocaleString()} | Pérdidas $${d.perdidas.toLocaleString()}`, 15, y);
+        y += 7;
+        doc.text(`Utilidad Fiscal $${d.utilidadFiscal.toLocaleString()} | Resultado Fiscal $${d.resultadoFiscal.toLocaleString()} | Ingresos Nominales $${d.ingresosNominalesMes.toLocaleString()}`, 15, y);
+        y += 10;
+        if(y > 250) { doc.addPage(); y = 15; }
+      });
+      doc.save("Reporte_Gestion_Contable.pdf");
+    }
+  </script>
 </body>
-
 </html>
