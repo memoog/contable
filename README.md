@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -2583,6 +2583,79 @@ body {
       z-index: 14;
       opacity: 0;
     }
+
+    /* Estilos para joysticks mejorados */
+    .joystick-container {
+      position: fixed;
+      bottom: 20px;
+      width: 120px;
+      height: 120px;
+      z-index: 100;
+    }
+
+    #joystick-light-container {
+      left: 20px;
+    }
+
+    #joystick-vitrectomo-container {
+      right: 20px;
+    }
+
+    .joystick {
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      position: relative;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .joystick-handle {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .slider-container {
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .slider-container label {
+      display: block;
+      color: white;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+
+    .slider-container input[type="range"] {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .slider-container button {
+      background: rgba(0, 150, 255, 0.7);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .slider-container button:active {
+      background: rgba(0, 100, 200, 0.7);
+    }
   </style>
 </head>
 <body>
@@ -2918,17 +2991,17 @@ body {
     let sf6PressCount = 0; // Contador de presiones con SF6 activo
     let mliFlaps = []; // Para almacenar los fragmentos de MLI levantados
     let mliPeelingStarted = false; // Indica si se ha iniciado el peeling de la MLI
+    let activeTouchId = null; // Para manejar multitouch
+    let joystickSensitivity = 0.7; // Factor de sensibilidad para los joysticks
 
     /* ================== INICIALIZACIÓN ================== */
     document.addEventListener('DOMContentLoaded', function() {
       // Mostrar caso clínico al inicio
       document.getElementById('start-simulation-btn').addEventListener('click', function() {
-        anime({
-          targets: '#clinical-case',
+        gsap.to('#clinical-case', {
           opacity: 0,
-          duration: 500,
-          easing: 'easeInOutQuad',
-          complete: () => {
+          duration: 0.5,
+          onComplete: () => {
             document.getElementById('clinical-case').style.display = 'none';
             initSimulation();
           }
@@ -3064,11 +3137,10 @@ body {
       document.querySelectorAll('.alert-dismiss').forEach(btn => {
         btn.addEventListener('click', function() {
           const alert = this.parentElement;
-          anime({
-            targets: alert,
+          gsap.to(alert, {
             opacity: 0,
             translateY: -20,
-            duration: 300,
+            duration: 0.3,
             easing: 'easeOutQuad',
             complete: () => {
               alert.style.display = 'none';
@@ -3085,33 +3157,28 @@ body {
       if (!alert) return;
       
       alert.style.display = 'flex';
-      anime({
-        targets: alert,
-        opacity: [0, 1],
-        translateY: [-20, 0],
-        duration: 300,
-        easing: 'easeOutQuad'
-      });
+      gsap.fromTo(alert, 
+        { opacity: 0, y: -20 }, 
+        { opacity: 1, y: 0, duration: 0.3, ease: "power1.out" }
+      );
       
       const timer = alert.querySelector('.alert-timer');
       if (timer) {
-        anime({
-          targets: timer,
-          width: ['100%', '0%'],
-          duration: duration,
-          easing: 'linear'
-        });
+        timer.style.width = '100%';
+        timer.style.transition = `width ${duration/1000}s linear`;
+        setTimeout(() => {
+          timer.style.width = '0%';
+        }, 10);
       }
       
       if (duration > 0) {
         setTimeout(() => {
-          anime({
-            targets: alert,
+          gsap.to(alert, {
             opacity: 0,
-            translateY: -20,
-            duration: 300,
-            easing: 'easeOutQuad',
-            complete: () => {
+            y: -20,
+            duration: 0.3,
+            ease: "power1.out",
+            onComplete: () => {
               alert.style.display = 'none';
               alert.style.opacity = '1';
               alert.style.transform = 'translateY(0)';
@@ -3198,7 +3265,7 @@ body {
         vitrectomoJoystickY = y;
         updateInstrumentPosition(x, y);
         updateMiniLeftLine(x, y);
-      });
+      }, 'vitrectomo');
       
       const joystickLight = document.getElementById('joystick-light');
       initJoystick(joystickLight, (x, y) => {
@@ -3206,30 +3273,58 @@ body {
         lightJoystickY = y;
         updateEndoLightEffect(x, y);
         updateMiniRightLine(x, y);
-      });
+      }, 'light');
     }
     
-    function initJoystick(joystickElement, updateCallback) {
+    function initJoystick(joystickElement, updateCallback, type) {
       const handle = joystickElement.querySelector('.joystick-handle');
       const rect = joystickElement.getBoundingClientRect();
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const maxDistance = rect.width / 2;
-      let isTouching = false;
+      const maxDistance = rect.width / 2 * joystickSensitivity;
+      
+      let isDragging = false;
+      let touchId = null;
       
       function handleStart(e) {
         e.preventDefault();
-        isTouching = true;
-        handleMove(e);
+        if (isDragging) return;
+        
+        isDragging = true;
+        if (e.touches) {
+          // Para multitouch, encontrar el touch correcto
+          const touches = Array.from(e.touches);
+          const touch = touches.find(t => {
+            const element = document.elementFromPoint(t.clientX, t.clientY);
+            return element === joystickElement || element === handle;
+          });
+          
+          if (!touch) return;
+          touchId = touch.identifier;
+          activeTouchId = touchId;
+          handleMove(e);
+        } else {
+          handleMove(e);
+        }
       }
       
       function handleMove(e) {
-        if (!isTouching) return;
+        if (!isDragging) return;
         
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        let clientX, clientY;
         
-        if(!clientX || !clientY) return;
+        if (e.touches) {
+          // Encontrar el touch específico
+          const touches = Array.from(e.touches);
+          const touch = touches.find(t => t.identifier === touchId);
+          if (!touch) return;
+          
+          clientX = touch.clientX;
+          clientY = touch.clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
         
         const bounds = joystickElement.getBoundingClientRect();
         const x = clientX - bounds.left;
@@ -3245,26 +3340,62 @@ body {
           deltaY = Math.sin(angle) * maxDistance;
         }
         
-        handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        // Suavizar el movimiento con interpolación
+        gsap.to(handle, {
+          x: deltaX,
+          y: deltaY,
+          duration: 0.1,
+          ease: "power1.out"
+        });
         
+        // Normalizar las coordenadas (0-100)
         const normalizedX = ((deltaX + maxDistance) / (2 * maxDistance)) * 100;
         const normalizedY = ((deltaY + maxDistance) / (2 * maxDistance)) * 100;
         
         updateCallback(normalizedX, normalizedY);
       }
       
-      function handleEnd() {
-        isTouching = false;
-        handle.style.transform = `translate(0px, 0px)`;
+      function handleEnd(e) {
+        if (!isDragging) return;
+        
+        // Verificar si el touch que terminó es el que controla este joystick
+        if (e.touches) {
+          const touches = Array.from(e.changedTouches);
+          const touch = touches.find(t => t.identifier === touchId);
+          if (!touch) return;
+        }
+        
+        isDragging = false;
+        touchId = null;
+        activeTouchId = null;
+        
+        // Suavizar el retorno a la posición central
+        gsap.to(handle, {
+          x: 0,
+          y: 0,
+          duration: 0.3,
+          ease: "elastic.out(1, 0.5)"
+        });
+        
+        // Resetear posición cuando se suelta
         updateCallback(50, 50);
       }
       
       // Eventos táctiles
       joystickElement.addEventListener('touchstart', handleStart, { passive: false });
-      joystickElement.addEventListener('touchmove', handleMove, { passive: false });
-      joystickElement.addEventListener('touchend', handleEnd);
+      document.addEventListener('touchmove', (e) => {
+        if (activeTouchId !== null) {
+          const touches = Array.from(e.touches);
+          if (touches.some(t => t.identifier === activeTouchId)) {
+            handleMove(e);
+          }
+        }
+      }, { passive: false });
       
-      // Eventos de ratón para compatibilidad
+      document.addEventListener('touchend', handleEnd);
+      document.addEventListener('touchcancel', handleEnd);
+      
+      // Eventos de ratón
       joystickElement.addEventListener('mousedown', handleStart);
       document.addEventListener('mousemove', handleMove);
       document.addEventListener('mouseup', handleEnd);
